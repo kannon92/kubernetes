@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
@@ -491,6 +491,51 @@ func TestGeneratePodHasNetworkCondition(t *testing.T) {
 			require.Equal(t, test.expected.Status, condition.Status)
 		})
 	}
+}
+
+func TestGeneratePodFailedToStart(t *testing.T) {
+	for desc, test := range map[string]struct {
+		pod      *v1.Pod
+		status   *kubecontainer.PodStatus
+		expected v1.PodCondition
+	}{
+		"InvalidImageName": {
+			pod:    &v1.Pod{},
+			status: &kubecontainer.PodStatus{},
+			expected: v1.PodCondition{
+				Status: v1.ConditionTrue,
+			},
+		},
+		"CreateContainerConfigError": {
+			pod: &v1.Pod{},
+			status: &kubecontainer.PodStatus{},
+			expected: v1.PodCondition{
+				Status: v1.ConditionTrue,
+			},
+		},
+		"ImagePullBackOff": {
+			pod: &v1.Pod{},
+			status: &kubecontainer.PodStatus{},
+			expected: v1.PodCondition{
+				Status: v1.ConditionFalse,
+			},
+		},
+		"PodStartsWithoutIssue": {
+			pod: &v1.Pod{},
+			status: &kubecontainer.PodStatus{},
+			expected: v1.PodCondition{
+				Status: v1.ConditionFalse,
+			},
+		},
+	} {
+		t.Run(desc, func(t *testing.T) {
+			test.expected.Type = v1.PodFailedToStart
+			condition := GeneratePodFailedToStart(test.pod, test.status)
+			require.Equal(t, test.expected.Type, condition.Type)
+			require.Equal(t, test.expected.Status, condition.Status)
+		})
+	}
+
 }
 
 func getPodCondition(conditionType v1.PodConditionType, status v1.ConditionStatus, reason, message string) v1.PodCondition {

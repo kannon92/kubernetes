@@ -40,6 +40,8 @@ const (
 	ContainersNotInitialized = "ContainersNotInitialized"
 	// ReadinessGatesNotReady says that one or more pod readiness gates are not ready.
 	ReadinessGatesNotReady = "ReadinessGatesNotReady"
+	// PodFailedToStart says that container had a configuration error and won't start.
+	PodFailedToStart = "PodFailedToStart"
 )
 
 // GenerateContainersReadyCondition returns the status of "ContainersReady" condition.
@@ -212,6 +214,13 @@ func GeneratePodHasNetworkCondition(pod *v1.Pod, podStatus *kubecontainer.PodSta
 	}
 	return v1.PodCondition{
 		Type:   kubetypes.PodHasNetwork,
+		Status: v1.ConditionFalse,
+	}
+}
+
+func GeneratePodFailedToStart(pod *v1.Pod, podStatus *kubecontainer.PodStatus) v1.PodCondition {
+	return v1.PodCondition{
+		Type: v1.PodFailedToStart,
 		Status: v1.ConditionFalse,
 	}
 }

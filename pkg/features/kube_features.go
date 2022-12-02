@@ -691,7 +691,11 @@ const (
 	//
 	// Enable users to specify when a Pod is ready for scheduling.
 	PodSchedulingReadiness featuregate.Feature = "PodSchedulingReadiness"
-
+	// owner: @kannon92
+	// alpha: v1.27
+	// beta: v1.28
+	// ga: v1.30
+	PodFailedToStartCondition featuregate.Feature = "PodFailedToStartCondition"
 	// owner: @liggitt, @tallclair, sig-auth
 	// alpha: v1.22
 	// beta: v1.23
@@ -1094,6 +1098,8 @@ var defaultKubernetesFeatureGates = map[featuregate.Feature]featuregate.FeatureS
 	PodDeletionCost: {Default: true, PreRelease: featuregate.Beta},
 
 	PodDisruptionConditions: {Default: true, PreRelease: featuregate.Beta},
+	
+	PodFailedToStartCondition: {Default: false, PreRelease: featuregate.Alpha},
 
 	PodHasNetworkCondition: {Default: false, PreRelease: featuregate.Alpha},
 
