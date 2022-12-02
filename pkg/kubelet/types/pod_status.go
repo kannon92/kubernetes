@@ -42,6 +42,12 @@ func PodConditionByKubelet(conditionType v1.PodConditionType) bool {
 			return true
 		}
 	}
+	// Review Question: What is meant by owned or shared by kubelet?
+	if utilfeature.DefaultFeatureGate.Enabled(features.PodFailingToStartCondition) {
+		if conditionType == v1.PodFailingToStart {
+			return true
+		}
+	}
 	return false
 }
 

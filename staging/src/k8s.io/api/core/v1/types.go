@@ -2845,6 +2845,9 @@ const (
 	// DisruptionTarget indicates the pod is about to be terminated due to a
 	// disruption (such as preemption, eviction API or garbage-collection).
 	DisruptionTarget PodConditionType = "DisruptionTarget"
+	// PodFailingToStart For Setting Pod Failed To Start if Pod is stuck due
+	// to configuration error.
+	PodFailingToStart PodConditionType = "FailingToStart"
 )
 
 // These are reasons for a pod's transition to a condition.

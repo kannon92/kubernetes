@@ -685,8 +685,21 @@ const (
 	//
 	// Enable users to specify when a Pod is ready for scheduling.
 	PodSchedulingReadiness featuregate.Feature = "PodSchedulingReadiness"
+	// owner: @kannon92
+	// alpha: v1.27
 
-	// owner: @rphillips
+	// Enable reporting of PodFailingToStart in pod status for configuration
+	// errors.
+	PodFailingToStartCondition featuregate.Feature = "PodFailingToStartCondition"
+	// owner: @liggitt, @tallclair, sig-auth
+	// alpha: v1.22
+	// beta: v1.23
+	// ga: v1.25
+	//
+	// Enables the PodSecurity admission plugin
+	PodSecurity featuregate.Feature = "PodSecurity"
+
+	// owner: @ehashman
 	// alpha: v1.21
 	// beta: v1.22
 	// ga: v1.28
@@ -1114,10 +1127,13 @@ var defaultKubernetesFeatureGates = map[featuregate.Feature]featuregate.FeatureS
 	PersistentVolumeLastPhaseTransitionTime: {Default: false, PreRelease: featuregate.Alpha},
 
 	PodAndContainerStatsFromCRI: {Default: false, PreRelease: featuregate.Alpha},
-
+	
+	
 	PodDeletionCost: {Default: true, PreRelease: featuregate.Beta},
-
+	
 	PodDisruptionConditions: {Default: true, PreRelease: featuregate.Beta},
+
+	PodFailingToStartCondition: {Default: false, PreRelease: featuregate.Alpha},
 
 	PodReadyToStartContainersCondition: {Default: false, PreRelease: featuregate.Alpha},
 

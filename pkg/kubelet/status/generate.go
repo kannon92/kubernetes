@@ -40,6 +40,8 @@ const (
 	ContainersNotInitialized = "ContainersNotInitialized"
 	// ReadinessGatesNotReady says that one or more pod readiness gates are not ready.
 	ReadinessGatesNotReady = "ReadinessGatesNotReady"
+	// PodFailingToStart says that container had a configuration error and won't start.
+	PodFailingToStart = "PodFailingToStart"
 )
 
 // GenerateContainersReadyCondition returns the status of "ContainersReady" condition.
@@ -255,6 +257,28 @@ func GeneratePodReadyToStartContainersCondition(pod *v1.Pod, podStatus *kubecont
 		Type:   kubetypes.PodReadyToStartContainers,
 		Status: v1.ConditionFalse,
 	}
+}
+
+func GeneratePodFailingToStart(pod *v1.Pod, containerStatus []v1.ContainerStatus) v1.PodCondition {
+	successfulCondition := v1.PodCondition{
+		Type:   v1.PodFailingToStart,
+		Status: v1.ConditionFalse,
+	}
+	failedReasons := map[string]bool{"InvalidImageName": true, "CreateContainerConfigError": true, "ErrImageNeverPull": true}
+	for _, status := range containerStatus {
+		if status.State.Waiting == nil {
+			continue
+		}
+		_, ok := failedReasons[status.State.Waiting.Reason]
+		if ok {
+			return v1.PodCondition{
+				Type:   v1.PodFailingToStart,
+				Status: v1.ConditionTrue,
+			}
+
+		}
+	}
+	return successfulCondition
 }
 
 func generateContainersReadyConditionForTerminalPhase(podPhase v1.PodPhase) v1.PodCondition {

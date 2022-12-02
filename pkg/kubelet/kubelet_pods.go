@@ -1738,25 +1738,26 @@ func (kl *Kubelet) generateAPIPodStatus(pod *v1.Pod, podStatus *kubecontainer.Po
 	if utilfeature.DefaultFeatureGate.Enabled(features.PodReadyToStartContainersCondition) {
 		s.Conditions = append(s.Conditions, status.GeneratePodReadyToStartContainersCondition(pod, podStatus))
 	}
-	allContainerStatuses := append(s.InitContainerStatuses, s.ContainerStatuses...)
-	s.Conditions = append(s.Conditions, status.GeneratePodInitializedCondition(&pod.Spec, allContainerStatuses, s.Phase))
-	s.Conditions = append(s.Conditions, status.GeneratePodReadyCondition(&pod.Spec, s.Conditions, allContainerStatuses, s.Phase))
-	s.Conditions = append(s.Conditions, status.GenerateContainersReadyCondition(&pod.Spec, allContainerStatuses, s.Phase))
+
+	s.Conditions = append(s.Conditions, status.GeneratePodInitializedCondition(&pod.Spec, s.InitContainerStatuses, s.Phase))
+	s.Conditions = append(s.Conditions, status.GeneratePodReadyCondition(&pod.Spec, s.Conditions, s.ContainerStatuses, s.Phase))
+	s.Conditions = append(s.Conditions, status.GenerateContainersReadyCondition(&pod.Spec, s.ContainerStatuses, s.Phase))
 	s.Conditions = append(s.Conditions, v1.PodCondition{
 		Type:   v1.PodScheduled,
 		Status: v1.ConditionTrue,
 	})
+	// Set PodFailingToStart Condition based on feature gate.
+	if utilfeature.DefaultFeatureGate.Enabled(features.PodFailingToStartCondition) {
+		s.Conditions = append(s.Conditions, status.GeneratePodFailingToStart(pod, oldPodStatus.ContainerStatuses))
+	}
 	// set HostIP/HostIPs and initialize PodIP/PodIPs for host network pods
-	if kl.kubeClient != nil {
-		hostIPs, err := kl.getHostIPsAnyWay()
-		if err != nil {
+	hostIPs, err := kl.getHostIPsAnyWay()
+	if err != nil {
 			klog.V(4).InfoS("Cannot get host IPs", "err", err)
 		} else {
 			if s.HostIP != "" {
-				if utilnet.IPFamilyOfString(s.HostIP) != utilnet.IPFamilyOf(hostIPs[0]) {
 					kl.recorder.Eventf(pod, v1.EventTypeWarning, "HostIPsIPFamilyMismatch",
-						"Kubelet detected an IPv%s node IP (%s), but the cloud provider selected an IPv%s node IP (%s); pass an explicit `--node-ip` to kubelet to fix this.",
-						utilnet.IPFamilyOfString(s.HostIP), s.HostIP, utilnet.IPFamilyOf(hostIPs[0]), hostIPs[0].String())
+						"Kubelet detected an IPv%s node IP (%s), but the cloud provider selected an IPv%s node IP (%s); pass an explicit `--node-ip` to kubelet to fix this.")
 				}
 			}
 			s.HostIP = hostIPs[0].String()

@@ -623,6 +623,115 @@ func TestGeneratePodReadyToStartContainersCondition(t *testing.T) {
 	}
 }
 
+func TestGeneratePodFailingToStart(t *testing.T) {
+	for desc, test := range map[string]struct {
+		pod      *v1.Pod
+		status   []v1.ContainerStatus
+		expected v1.PodCondition
+	}{
+
+		"InvalidImageName": {
+			pod: &v1.Pod{},
+			status: []v1.ContainerStatus{
+				{
+					State: v1.ContainerState{
+						Waiting: &v1.ContainerStateWaiting{Reason: "InvalidImageName"},
+					},
+				},
+			},
+			expected: v1.PodCondition{
+				Status: v1.ConditionTrue,
+			},
+		},
+		"ErrImageNeverPull": {
+			pod: &v1.Pod{},
+			status: []v1.ContainerStatus{
+				{
+					State: v1.ContainerState{
+						Waiting: &v1.ContainerStateWaiting{Reason: "ErrImageNeverPull"},
+					},
+				},
+			},
+			expected: v1.PodCondition{
+				Status: v1.ConditionTrue,
+			},
+		},
+		"CreateContainerConfigError": {
+			pod: &v1.Pod{},
+			status: []v1.ContainerStatus{
+				{
+					State: v1.ContainerState{
+						Waiting: &v1.ContainerStateWaiting{Reason: "CreateContainerConfigError"},
+					},
+				},
+			},
+			expected: v1.PodCondition{
+				Status: v1.ConditionTrue,
+			},
+		},
+		"ImagePullBackOff": {
+			pod: &v1.Pod{},
+			status: []v1.ContainerStatus{
+				{
+					State: v1.ContainerState{
+						Waiting: &v1.ContainerStateWaiting{Reason: "ImagePullBackOff"},
+					},
+				},
+			},
+			expected: v1.PodCondition{
+				Status: v1.ConditionFalse,
+			},
+		},
+		"PodStartsWithoutIssue": {
+			pod: &v1.Pod{},
+			status: []v1.ContainerStatus{
+				{
+					State: v1.ContainerState{
+						Waiting: &v1.ContainerStateWaiting{Reason: "ImagePullBackOff"},
+					},
+				},
+			},
+			expected: v1.PodCondition{
+				Status: v1.ConditionFalse,
+			},
+		},
+		"PodRunning": {
+			pod: &v1.Pod{},
+			status: []v1.ContainerStatus{
+				{
+					State: v1.ContainerState{
+						Running: &v1.ContainerStateRunning{},
+					},
+				},
+			},
+			expected: v1.PodCondition{
+				Status: v1.ConditionFalse,
+			},
+		},
+		"PodTerminated": {
+			pod: &v1.Pod{},
+			status: []v1.ContainerStatus{
+				{
+					State: v1.ContainerState{
+						Terminated: &v1.ContainerStateTerminated{},
+					},
+				},
+			},
+			expected: v1.PodCondition{
+				Status: v1.ConditionFalse,
+			},
+		},
+	} {
+		t.Run(desc, func(t *testing.T) {
+			test.expected.Type = v1.PodFailingToStart
+			condition := GeneratePodFailingToStart(test.pod, test.status)
+			require.Equal(t, test.expected.Type, condition.Type)
+			require.Equal(t, test.expected.Status, condition.Status)
+		})
+	}
+
+}
+
 func getPodCondition(conditionType v1.PodConditionType, status v1.ConditionStatus, reason, message string) v1.PodCondition {
 	return v1.PodCondition{
 		Type:    conditionType,
