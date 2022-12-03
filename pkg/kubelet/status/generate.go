@@ -223,6 +223,8 @@ func GeneratePodFailedToStart(pod *v1.Pod, podStatus *kubecontainer.PodStatus) v
 		Type: v1.PodFailedToStart,
 		Status: v1.ConditionFalse,
 	}
+
+	//TODO For ErrInvalidImageName, CreateContainerConfigError and ErrNeverImagePull, etc, we can set condition to true
 }
 
 func generateContainersReadyConditionForTerminalPhase(podPhase v1.PodPhase) v1.PodCondition {

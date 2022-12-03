@@ -506,6 +506,13 @@ func TestGeneratePodFailedToStart(t *testing.T) {
 				Status: v1.ConditionTrue,
 			},
 		},
+		"ErrImageNeverPull": {
+			pod:    &v1.Pod{},
+			status: &kubecontainer.PodStatus{},
+			expected: v1.PodCondition{
+				Status: v1.ConditionTrue,
+			},
+		},
 		"CreateContainerConfigError": {
 			pod: &v1.Pod{},
 			status: &kubecontainer.PodStatus{},
