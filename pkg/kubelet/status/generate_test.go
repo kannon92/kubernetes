@@ -499,36 +499,45 @@ func TestGeneratePodFailedToStart(t *testing.T) {
 		status   *kubecontainer.PodStatus
 		expected v1.PodCondition
 	}{
-		"InvalidImageName": {
+		"ErrInvalidImageName": {
 			pod:    &v1.Pod{},
-			status: &kubecontainer.PodStatus{},
+			status: &kubecontainer.PodStatus{ContainerStatuses: []*kubecontainer.Status{{
+				Reason: "ErrInvalidImageName",
+			}}},
 			expected: v1.PodCondition{
 				Status: v1.ConditionTrue,
 			},
 		},
 		"ErrImageNeverPull": {
-			pod:    &v1.Pod{},
-			status: &kubecontainer.PodStatus{},
+			pod: &v1.Pod{},
+			status: &kubecontainer.PodStatus{ContainerStatuses: []*kubecontainer.Status{{
+				Reason: "ErrImageNeverPull",
+			},
+			}},
 			expected: v1.PodCondition{
 				Status: v1.ConditionTrue,
 			},
 		},
 		"CreateContainerConfigError": {
-			pod: &v1.Pod{},
-			status: &kubecontainer.PodStatus{},
+			pod:    &v1.Pod{},
+			status: &kubecontainer.PodStatus{ContainerStatuses: []*kubecontainer.Status{{
+				Reason: "CreateContainerConfigError",
+			}}},
 			expected: v1.PodCondition{
 				Status: v1.ConditionTrue,
 			},
 		},
 		"ImagePullBackOff": {
-			pod: &v1.Pod{},
-			status: &kubecontainer.PodStatus{},
+			pod:    &v1.Pod{},
+			status: &kubecontainer.PodStatus{ContainerStatuses: []*kubecontainer.Status{{
+				Reason: "ImagePullBackOff",
+			}}},
 			expected: v1.PodCondition{
 				Status: v1.ConditionFalse,
 			},
 		},
 		"PodStartsWithoutIssue": {
-			pod: &v1.Pod{},
+			pod:    &v1.Pod{},
 			status: &kubecontainer.PodStatus{},
 			expected: v1.PodCondition{
 				Status: v1.ConditionFalse,
