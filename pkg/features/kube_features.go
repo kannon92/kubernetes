@@ -693,8 +693,9 @@ const (
 	PodSchedulingReadiness featuregate.Feature = "PodSchedulingReadiness"
 	// owner: @kannon92
 	// alpha: v1.27
-	// beta: v1.28
-	// ga: v1.30
+
+	// Enable reporting of PodFailedToStart in pod status for configuration 
+	// errors.
 	PodFailedToStartCondition featuregate.Feature = "PodFailedToStartCondition"
 	// owner: @liggitt, @tallclair, sig-auth
 	// alpha: v1.22
