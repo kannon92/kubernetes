@@ -3861,3 +3861,75 @@ func TestConvertToAPIContainerStatusesDataRace(t *testing.T) {
 		}()
 	}
 }
+
+func TestPodFailedToCreateConditionWithReason(t *testing.T) {
+	pod := podWithUIDNameNs("12345", "test-pod", "test-namespace")
+	expectedConditions := []v1.PodCondition{
+		{Type: v1.PodInitialized, Status: v1.ConditionTrue},
+		{Type: v1.PodReady, Status: v1.ConditionTrue},
+		{Type: v1.ContainersReady, Status: v1.ConditionTrue},
+		{Type: v1.PodScheduled, Status: v1.ConditionTrue},
+	}
+
+	testcases := []struct {
+		name               string
+		reason             string
+		podFailedCondition []v1.PodCondition
+	}{
+		{
+			name:   "HappyPath",
+			reason: "",
+			podFailedCondition: []v1.PodCondition{{
+				Type:   v1.PodFailedToStart,
+				Status: v1.ConditionFalse,
+			}},
+		},
+		{
+			name:   "Invalid Image Name",
+			reason: "ErrInvalidImageName",
+			podFailedCondition: []v1.PodCondition{{
+				Type:   v1.PodFailedToStart,
+				Status: v1.ConditionTrue,
+			}},
+		},
+		{
+			name:   "Image Never Pull",
+			reason: "ErrImageNeverPull",
+			podFailedCondition: []v1.PodCondition{{
+				Type:   v1.PodFailedToStart,
+				Status: v1.ConditionTrue,
+			}},
+		},
+		{
+			name:   "Container Config Error",
+			reason: "CreateContainerConfigError",
+			podFailedCondition: []v1.PodCondition{{
+				Type:   v1.PodFailedToStart,
+				Status: v1.ConditionTrue,
+			}},
+		},
+	}
+	for _, test := range testcases {
+		for _, enablePodFailedToStartCondition := range []bool{false, true} {
+			t.Run(test.name, func(t *testing.T) {
+				defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.PodFailedToStartCondition, enablePodFailedToStartCondition)()
+				testKubelet := newTestKubelet(t, false /* controllerAttachDetachEnabled */)
+				defer testKubelet.Cleanup()
+				kl := testKubelet.kubelet
+				currentStatus := &kubecontainer.PodStatus{
+					ContainerStatuses: []*kubecontainer.Status{
+						{Reason: test.reason},
+					},
+				}
+				actual := kl.generateAPIPodStatus(pod, currentStatus)
+				if enablePodFailedToStartCondition {
+					expectedConditions = append(expectedConditions, test.podFailedCondition...)
+				}
+				if !reflect.DeepEqual(actual.Conditions, expectedConditions) {
+					t.Fatalf("Expected Conditions %#v, got %#v", expectedConditions, actual.Conditions)
+				}
+			})
+		}
+	}
+
+}

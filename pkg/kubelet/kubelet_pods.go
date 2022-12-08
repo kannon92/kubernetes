@@ -1542,10 +1542,6 @@ func (kl *Kubelet) generateAPIPodStatus(pod *v1.Pod, podStatus *kubecontainer.Po
 		s.Conditions = append(s.Conditions, status.GeneratePodHasNetworkCondition(pod, podStatus))
 	}
 
-	if utilfeature.DefaultFeatureGate.Enabled(features.PodFailedToStartCondition) {
-		s.Conditions = append(s.Conditions, status.GeneratePodFailedToStart(pod, podStatus))
-	}
-	
 	s.Conditions = append(s.Conditions, status.GeneratePodInitializedCondition(&pod.Spec, s.InitContainerStatuses, s.Phase))
 	s.Conditions = append(s.Conditions, status.GeneratePodReadyCondition(&pod.Spec, s.Conditions, s.ContainerStatuses, s.Phase))
 	s.Conditions = append(s.Conditions, status.GenerateContainersReadyCondition(&pod.Spec, s.ContainerStatuses, s.Phase))
@@ -1553,6 +1549,11 @@ func (kl *Kubelet) generateAPIPodStatus(pod *v1.Pod, podStatus *kubecontainer.Po
 		Type:   v1.PodScheduled,
 		Status: v1.ConditionTrue,
 	})
+	// Set PodFailedToStart Condition based on feature gate.
+	if utilfeature.DefaultFeatureGate.Enabled(features.PodFailedToStartCondition) {
+		s.Conditions = append(s.Conditions, status.GeneratePodFailedToStart(pod, podStatus))
+	}
+
 	// set HostIP and initialize PodIP/PodIPs for host network pods
 	if kl.kubeClient != nil {
 		hostIPs, err := kl.getHostIPsAnyWay()
