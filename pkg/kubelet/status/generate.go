@@ -218,10 +218,17 @@ func GeneratePodHasNetworkCondition(pod *v1.Pod, podStatus *kubecontainer.PodSta
 	}
 }
 
-func GeneratePodFailedToStart(pod *v1.Pod, podStatus *kubecontainer.PodStatus) v1.PodCondition {
+func GeneratePodFailedToStart(pod *v1.Pod, containerStatus []v1.ContainerStatus) v1.PodCondition {
+	successfulCondition := v1.PodCondition{
+		Type: v1.PodFailedToStart,
+		Status: v1.ConditionFalse,
+	}
 	failedReasons := map[string]bool{"ErrInvalidImageName": true, "CreateContainerConfigError": true, "ErrImageNeverPull":true}
-	for _, status := range(podStatus.ContainerStatuses) {
-		_, ok := failedReasons[status.Reason]
+	for _, status := range(containerStatus) {
+		if status.State.Waiting == nil {
+			continue
+		}
+		_, ok := failedReasons[status.State.Waiting.Reason]
 		if ok {
 			return v1.PodCondition{
 				Type: v1.PodFailedToStart,
@@ -230,10 +237,7 @@ func GeneratePodFailedToStart(pod *v1.Pod, podStatus *kubecontainer.PodStatus) v
 		
 		}
 	}
-	return v1.PodCondition{
-		Type: v1.PodFailedToStart,
-		Status: v1.ConditionFalse,
-	}
+	return successfulCondition
 }
 
 func generateContainersReadyConditionForTerminalPhase(podPhase v1.PodPhase) v1.PodCondition {

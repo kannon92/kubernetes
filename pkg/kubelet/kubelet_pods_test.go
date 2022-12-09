@@ -3864,7 +3864,9 @@ func TestConvertToAPIContainerStatusesDataRace(t *testing.T) {
 
 func TestPodFailedToCreateConditionWithReason(t *testing.T) {
 	pod := podWithUIDNameNs("12345", "test-pod", "test-namespace")
-	expectedConditions := []v1.PodCondition{
+
+	desiredState := pod.Spec
+	expectedConditionsWithoutFeatureFlag := []v1.PodCondition{
 		{Type: v1.PodInitialized, Status: v1.ConditionTrue},
 		{Type: v1.PodReady, Status: v1.ConditionTrue},
 		{Type: v1.ContainersReady, Status: v1.ConditionTrue},
@@ -3872,41 +3874,128 @@ func TestPodFailedToCreateConditionWithReason(t *testing.T) {
 	}
 
 	testcases := []struct {
-		name               string
-		reason             string
-		podFailedCondition []v1.PodCondition
+		name                  string
+		pod                   *v1.Pod
+		reason                string
+		podExpectedConditions []v1.PodCondition
+		podStatus             *kubecontainer.PodStatus
 	}{
 		{
 			name:   "HappyPath",
+			pod: &v1.Pod{
+				ObjectMeta: pod.ObjectMeta,
+				Spec: desiredState,
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+					ContainerStatuses: []v1.ContainerStatus{
+						waitingStateWithReason("containerA", ""),
+					},
+				},
+			},
 			reason: "",
-			podFailedCondition: []v1.PodCondition{{
-				Type:   v1.PodFailedToStart,
-				Status: v1.ConditionFalse,
-			}},
+			podExpectedConditions: []v1.PodCondition{
+				{Type: v1.PodInitialized, Status: v1.ConditionTrue},
+				{Type: v1.PodReady, Status: v1.ConditionTrue},
+				{Type: v1.ContainersReady, Status: v1.ConditionTrue},
+				{Type: v1.PodScheduled, Status: v1.ConditionTrue},
+				{
+					Type:   v1.PodFailedToStart,
+					Status: v1.ConditionFalse,
+				}},
+			podStatus: &kubecontainer.PodStatus{
+				ID: pod.UID,
+				ContainerStatuses: []*kubecontainer.Status{{
+					State:  kubecontainer.ContainerStateCreated,
+					Reason: "",
+				}}},
 		},
 		{
 			name:   "Invalid Image Name",
+			pod: &v1.Pod{
+				ObjectMeta: pod.ObjectMeta,
+				Spec: desiredState,
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+					ContainerStatuses: []v1.ContainerStatus{
+						waitingStateWithReason("containerA", "ErrInvalidImageName"),
+					},
+				},
+			},
 			reason: "ErrInvalidImageName",
-			podFailedCondition: []v1.PodCondition{{
-				Type:   v1.PodFailedToStart,
-				Status: v1.ConditionTrue,
-			}},
+			podExpectedConditions: []v1.PodCondition{
+				{Type: v1.PodInitialized, Status: v1.ConditionTrue},
+				{Type: v1.PodReady, Status: v1.ConditionTrue},
+				{Type: v1.ContainersReady, Status: v1.ConditionTrue},
+				{Type: v1.PodScheduled, Status: v1.ConditionTrue},
+				{
+					Type:   v1.PodFailedToStart,
+					Status: v1.ConditionTrue,
+				}},
+				podStatus: &kubecontainer.PodStatus{
+					ID: pod.UID,
+					ContainerStatuses: []*kubecontainer.Status{{
+						State:  kubecontainer.ContainerStateCreated,
+						Reason: "ErrInvalidImageName",
+					}}},	
 		},
 		{
 			name:   "Image Never Pull",
+			pod: &v1.Pod{
+				Spec: desiredState,
+				ObjectMeta: pod.ObjectMeta,
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+					ContainerStatuses: []v1.ContainerStatus{
+						waitingStateWithReason("containerA", "ErrImageNeverPull"),
+					},
+				},
+			},
+
 			reason: "ErrImageNeverPull",
-			podFailedCondition: []v1.PodCondition{{
-				Type:   v1.PodFailedToStart,
-				Status: v1.ConditionTrue,
-			}},
+			podExpectedConditions: []v1.PodCondition{
+				{Type: v1.PodInitialized, Status: v1.ConditionTrue},
+				{Type: v1.PodReady, Status: v1.ConditionTrue},
+				{Type: v1.ContainersReady, Status: v1.ConditionTrue},
+				{Type: v1.PodScheduled, Status: v1.ConditionTrue},
+				{
+					Type:   v1.PodFailedToStart,
+					Status: v1.ConditionTrue,
+				}},
+				podStatus: &kubecontainer.PodStatus{
+					ID: pod.UID,
+					ContainerStatuses: []*kubecontainer.Status{{
+						State:  kubecontainer.ContainerStateCreated,
+						Reason: "ErrImageNeverPull",
+					}}},	
 		},
 		{
 			name:   "Container Config Error",
+			pod: &v1.Pod{
+				Spec: desiredState,
+				ObjectMeta: pod.ObjectMeta,
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+					ContainerStatuses: []v1.ContainerStatus{
+						waitingStateWithReason("containerA", "CreateContainerConfigError"),
+					},
+				},
+			},
 			reason: "CreateContainerConfigError",
-			podFailedCondition: []v1.PodCondition{{
-				Type:   v1.PodFailedToStart,
-				Status: v1.ConditionTrue,
-			}},
+			podExpectedConditions: []v1.PodCondition{
+				{Type: v1.PodInitialized, Status: v1.ConditionTrue},
+				{Type: v1.PodReady, Status: v1.ConditionTrue},
+				{Type: v1.ContainersReady, Status: v1.ConditionTrue},
+				{Type: v1.PodScheduled, Status: v1.ConditionTrue},
+				{
+					Type:   v1.PodFailedToStart,
+					Status: v1.ConditionTrue,
+				}},
+				podStatus: &kubecontainer.PodStatus{
+					ID: pod.UID,
+					ContainerStatuses: []*kubecontainer.Status{{
+						State:  kubecontainer.ContainerStateCreated,
+						Reason: "CreateContainerConfigError",
+					}}},	
 		},
 	}
 	for _, test := range testcases {
@@ -3914,19 +4003,19 @@ func TestPodFailedToCreateConditionWithReason(t *testing.T) {
 			t.Run(test.name, func(t *testing.T) {
 				defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.PodFailedToStartCondition, enablePodFailedToStartCondition)()
 				testKubelet := newTestKubelet(t, false /* controllerAttachDetachEnabled */)
+				
 				defer testKubelet.Cleanup()
 				kl := testKubelet.kubelet
-				currentStatus := &kubecontainer.PodStatus{
-					ContainerStatuses: []*kubecontainer.Status{
-						{Reason: test.reason},
-					},
-				}
-				actual := kl.generateAPIPodStatus(pod, currentStatus)
+				kl.statusManager.SetPodStatus(test.pod, test.pod.Status)
+				actual := kl.generateAPIPodStatus(test.pod, test.podStatus)
 				if enablePodFailedToStartCondition {
-					expectedConditions = append(expectedConditions, test.podFailedCondition...)
-				}
-				if !reflect.DeepEqual(actual.Conditions, expectedConditions) {
-					t.Fatalf("Expected Conditions %#v, got %#v", expectedConditions, actual.Conditions)
+					if !reflect.DeepEqual(actual.Conditions, test.podExpectedConditions) {
+						t.Fatalf("Actual Conditions %#v, got %#v", test.podExpectedConditions, actual.Conditions)
+					}
+				} else {
+					if !reflect.DeepEqual(actual.Conditions, expectedConditionsWithoutFeatureFlag) {
+						t.Fatalf("Actual Conditions %#v, got %#v", expectedConditionsWithoutFeatureFlag, actual.Conditions)
+					}
 				}
 			})
 		}

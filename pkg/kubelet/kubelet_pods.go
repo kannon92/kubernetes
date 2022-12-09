@@ -1550,8 +1550,12 @@ func (kl *Kubelet) generateAPIPodStatus(pod *v1.Pod, podStatus *kubecontainer.Po
 		Status: v1.ConditionTrue,
 	})
 	// Set PodFailedToStart Condition based on feature gate.
+	klog.V(0).Infof("KEVIN: ABOUT TO HIT FEATURE FLAG")
 	if utilfeature.DefaultFeatureGate.Enabled(features.PodFailedToStartCondition) {
-		s.Conditions = append(s.Conditions, status.GeneratePodFailedToStart(pod, podStatus))
+		klog.V(0).Infof("KEVIN: IN FEATURE FLAG")
+		klog.V(0).Infof("CONTAINTERSTATUS: %s",oldPodStatus.ContainerStatuses)
+
+		s.Conditions = append(s.Conditions, status.GeneratePodFailedToStart(pod, oldPodStatus.ContainerStatuses))
 	}
 
 	// set HostIP and initialize PodIP/PodIPs for host network pods

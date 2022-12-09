@@ -496,49 +496,97 @@ func TestGeneratePodHasNetworkCondition(t *testing.T) {
 func TestGeneratePodFailedToStart(t *testing.T) {
 	for desc, test := range map[string]struct {
 		pod      *v1.Pod
-		status   *kubecontainer.PodStatus
+		status   []v1.ContainerStatus
 		expected v1.PodCondition
 	}{
+
 		"ErrInvalidImageName": {
-			pod:    &v1.Pod{},
-			status: &kubecontainer.PodStatus{ContainerStatuses: []*kubecontainer.Status{{
-				Reason: "ErrInvalidImageName",
-			}}},
+			pod: &v1.Pod{},
+			status: []v1.ContainerStatus{
+				{
+					State: v1.ContainerState{
+						Waiting: &v1.ContainerStateWaiting{Reason: "ErrInvalidImageName"},
+					},
+				},
+			},
 			expected: v1.PodCondition{
 				Status: v1.ConditionTrue,
 			},
 		},
 		"ErrImageNeverPull": {
 			pod: &v1.Pod{},
-			status: &kubecontainer.PodStatus{ContainerStatuses: []*kubecontainer.Status{{
-				Reason: "ErrImageNeverPull",
+			status: []v1.ContainerStatus{
+				{
+					State: v1.ContainerState{
+						Waiting: &v1.ContainerStateWaiting{Reason: "ErrImageNeverPull"},
+					},
+				},
 			},
-			}},
 			expected: v1.PodCondition{
 				Status: v1.ConditionTrue,
 			},
 		},
 		"CreateContainerConfigError": {
-			pod:    &v1.Pod{},
-			status: &kubecontainer.PodStatus{ContainerStatuses: []*kubecontainer.Status{{
-				Reason: "CreateContainerConfigError",
-			}}},
+			pod: &v1.Pod{},
+			status: []v1.ContainerStatus{
+				{
+					State: v1.ContainerState{
+						Waiting: &v1.ContainerStateWaiting{Reason: "CreateContainerConfigError"},
+					},
+				},
+			},
 			expected: v1.PodCondition{
 				Status: v1.ConditionTrue,
 			},
 		},
 		"ImagePullBackOff": {
-			pod:    &v1.Pod{},
-			status: &kubecontainer.PodStatus{ContainerStatuses: []*kubecontainer.Status{{
-				Reason: "ImagePullBackOff",
-			}}},
+			pod: &v1.Pod{},
+			status: []v1.ContainerStatus{
+				{
+					State: v1.ContainerState{
+						Waiting: &v1.ContainerStateWaiting{Reason: "ImagePullBackOff"},
+					},
+				},
+			},
 			expected: v1.PodCondition{
 				Status: v1.ConditionFalse,
 			},
 		},
 		"PodStartsWithoutIssue": {
-			pod:    &v1.Pod{},
-			status: &kubecontainer.PodStatus{},
+			pod: &v1.Pod{},
+			status: []v1.ContainerStatus{
+				{
+					State: v1.ContainerState{
+						Waiting: &v1.ContainerStateWaiting{Reason: "ImagePullBackOff"},
+					},
+				},
+			},
+			expected: v1.PodCondition{
+				Status: v1.ConditionFalse,
+			},
+		},
+		"PodRunning": {
+			pod: &v1.Pod{},
+			status: []v1.ContainerStatus{
+				{
+					State: v1.ContainerState{
+						Running: &v1.ContainerStateRunning{},
+					},
+				},
+			},
+			expected: v1.PodCondition{
+				Status: v1.ConditionFalse,
+			},
+		},
+		"PodTerminated": {
+			pod: &v1.Pod{},
+			status: []v1.ContainerStatus{
+				{
+					State: v1.ContainerState{
+						Terminated: &v1.ContainerStateTerminated{},
+					},
+				},
+			},
 			expected: v1.PodCondition{
 				Status: v1.ConditionFalse,
 			},
