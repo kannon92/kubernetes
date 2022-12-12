@@ -500,12 +500,12 @@ func TestGeneratePodFailedToStart(t *testing.T) {
 		expected v1.PodCondition
 	}{
 
-		"ErrInvalidImageName": {
+		"InvalidImageName": {
 			pod: &v1.Pod{},
 			status: []v1.ContainerStatus{
 				{
 					State: v1.ContainerState{
-						Waiting: &v1.ContainerStateWaiting{Reason: "ErrInvalidImageName"},
+						Waiting: &v1.ContainerStateWaiting{Reason: "InvalidImageName"},
 					},
 				},
 			},

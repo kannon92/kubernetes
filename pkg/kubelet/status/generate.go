@@ -223,7 +223,7 @@ func GeneratePodFailedToStart(pod *v1.Pod, containerStatus []v1.ContainerStatus)
 		Type:   v1.PodFailedToStart,
 		Status: v1.ConditionFalse,
 	}
-	failedReasons := map[string]bool{"ErrInvalidImageName": true, "CreateContainerConfigError": true, "ErrImageNeverPull": true}
+	failedReasons := map[string]bool{"InvalidImageName": true, "CreateContainerConfigError": true, "ErrImageNeverPull": true}
 	for _, status := range containerStatus {
 		if status.State.Waiting == nil {
 			continue
