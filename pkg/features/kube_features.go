@@ -694,7 +694,7 @@ const (
 	// owner: @kannon92
 	// alpha: v1.27
 
-	// Enable reporting of PodFailedToStart in pod status for configuration 
+	// Enable reporting of PodFailedToStart in pod status for configuration
 	// errors.
 	PodFailedToStartCondition featuregate.Feature = "PodFailedToStartCondition"
 	// owner: @liggitt, @tallclair, sig-auth
@@ -1099,7 +1099,7 @@ var defaultKubernetesFeatureGates = map[featuregate.Feature]featuregate.FeatureS
 	PodDeletionCost: {Default: true, PreRelease: featuregate.Beta},
 
 	PodDisruptionConditions: {Default: true, PreRelease: featuregate.Beta},
-	
+
 	PodFailedToStartCondition: {Default: false, PreRelease: featuregate.Alpha},
 
 	PodHasNetworkCondition: {Default: false, PreRelease: featuregate.Alpha},

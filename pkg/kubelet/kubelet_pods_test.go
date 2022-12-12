@@ -3881,10 +3881,10 @@ func TestPodFailedToCreateConditionWithReason(t *testing.T) {
 		podStatus             *kubecontainer.PodStatus
 	}{
 		{
-			name:   "HappyPath",
+			name: "HappyPath",
 			pod: &v1.Pod{
 				ObjectMeta: pod.ObjectMeta,
-				Spec: desiredState,
+				Spec:       desiredState,
 				Status: v1.PodStatus{
 					Phase: v1.PodPending,
 					ContainerStatuses: []v1.ContainerStatus{
@@ -3910,10 +3910,10 @@ func TestPodFailedToCreateConditionWithReason(t *testing.T) {
 				}}},
 		},
 		{
-			name:   "Invalid Image Name",
+			name: "Invalid Image Name",
 			pod: &v1.Pod{
 				ObjectMeta: pod.ObjectMeta,
-				Spec: desiredState,
+				Spec:       desiredState,
 				Status: v1.PodStatus{
 					Phase: v1.PodPending,
 					ContainerStatuses: []v1.ContainerStatus{
@@ -3931,17 +3931,17 @@ func TestPodFailedToCreateConditionWithReason(t *testing.T) {
 					Type:   v1.PodFailedToStart,
 					Status: v1.ConditionTrue,
 				}},
-				podStatus: &kubecontainer.PodStatus{
-					ID: pod.UID,
-					ContainerStatuses: []*kubecontainer.Status{{
-						State:  kubecontainer.ContainerStateCreated,
-						Reason: "ErrInvalidImageName",
-					}}},	
+			podStatus: &kubecontainer.PodStatus{
+				ID: pod.UID,
+				ContainerStatuses: []*kubecontainer.Status{{
+					State:  kubecontainer.ContainerStateCreated,
+					Reason: "ErrInvalidImageName",
+				}}},
 		},
 		{
-			name:   "Image Never Pull",
+			name: "Image Never Pull",
 			pod: &v1.Pod{
-				Spec: desiredState,
+				Spec:       desiredState,
 				ObjectMeta: pod.ObjectMeta,
 				Status: v1.PodStatus{
 					Phase: v1.PodPending,
@@ -3961,17 +3961,17 @@ func TestPodFailedToCreateConditionWithReason(t *testing.T) {
 					Type:   v1.PodFailedToStart,
 					Status: v1.ConditionTrue,
 				}},
-				podStatus: &kubecontainer.PodStatus{
-					ID: pod.UID,
-					ContainerStatuses: []*kubecontainer.Status{{
-						State:  kubecontainer.ContainerStateCreated,
-						Reason: "ErrImageNeverPull",
-					}}},	
+			podStatus: &kubecontainer.PodStatus{
+				ID: pod.UID,
+				ContainerStatuses: []*kubecontainer.Status{{
+					State:  kubecontainer.ContainerStateCreated,
+					Reason: "ErrImageNeverPull",
+				}}},
 		},
 		{
-			name:   "Container Config Error",
+			name: "Container Config Error",
 			pod: &v1.Pod{
-				Spec: desiredState,
+				Spec:       desiredState,
 				ObjectMeta: pod.ObjectMeta,
 				Status: v1.PodStatus{
 					Phase: v1.PodPending,
@@ -3990,12 +3990,12 @@ func TestPodFailedToCreateConditionWithReason(t *testing.T) {
 					Type:   v1.PodFailedToStart,
 					Status: v1.ConditionTrue,
 				}},
-				podStatus: &kubecontainer.PodStatus{
-					ID: pod.UID,
-					ContainerStatuses: []*kubecontainer.Status{{
-						State:  kubecontainer.ContainerStateCreated,
-						Reason: "CreateContainerConfigError",
-					}}},	
+			podStatus: &kubecontainer.PodStatus{
+				ID: pod.UID,
+				ContainerStatuses: []*kubecontainer.Status{{
+					State:  kubecontainer.ContainerStateCreated,
+					Reason: "CreateContainerConfigError",
+				}}},
 		},
 	}
 	for _, test := range testcases {
@@ -4003,7 +4003,7 @@ func TestPodFailedToCreateConditionWithReason(t *testing.T) {
 			t.Run(test.name, func(t *testing.T) {
 				defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.PodFailedToStartCondition, enablePodFailedToStartCondition)()
 				testKubelet := newTestKubelet(t, false /* controllerAttachDetachEnabled */)
-				
+
 				defer testKubelet.Cleanup()
 				kl := testKubelet.kubelet
 				kl.statusManager.SetPodStatus(test.pod, test.pod.Status)

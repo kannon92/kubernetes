@@ -1553,7 +1553,7 @@ func (kl *Kubelet) generateAPIPodStatus(pod *v1.Pod, podStatus *kubecontainer.Po
 	klog.V(0).Infof("KEVIN: ABOUT TO HIT FEATURE FLAG")
 	if utilfeature.DefaultFeatureGate.Enabled(features.PodFailedToStartCondition) {
 		klog.V(0).Infof("KEVIN: IN FEATURE FLAG")
-		klog.V(0).Infof("CONTAINTERSTATUS: %s",oldPodStatus.ContainerStatuses)
+		klog.V(0).Infof("CONTAINTERSTATUS: %s", oldPodStatus.ContainerStatuses)
 
 		s.Conditions = append(s.Conditions, status.GeneratePodFailedToStart(pod, oldPodStatus.ContainerStatuses))
 	}
