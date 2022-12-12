@@ -1558,6 +1558,7 @@ func (kl *Kubelet) generateAPIPodStatus(pod *v1.Pod, podStatus *kubecontainer.Po
 		s.Conditions = append(s.Conditions, status.GeneratePodFailedToStart(pod, oldPodStatus.ContainerStatuses))
 	}
 
+	klog.V(0).Infof("Conditions: %s", &s.Conditions)
 	// set HostIP and initialize PodIP/PodIPs for host network pods
 	if kl.kubeClient != nil {
 		hostIPs, err := kl.getHostIPsAnyWay()
