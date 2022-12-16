@@ -114,7 +114,9 @@ func (r *RestartDaemonConfig) waitUp() {
 	}
 	err := wait.Poll(r.pollInterval, r.pollTimeout, func() (bool, error) {
 		result, err := e2essh.NodeExec(r.nodeName, healthzCheck, framework.TestContext.Provider)
-		framework.ExpectNoError(err)
+		if err != nil {
+			return false, err
+		}
 		if result.Code == 0 {
 			httpCode, err := strconv.Atoi(result.Stdout)
 			if err != nil {
@@ -270,7 +272,7 @@ var _ = SIGDescribe("DaemonRestart [Disruptive]", func() {
 		close(stopCh)
 	})
 
-	ginkgo.It("Controller Manager should not create/delete replicas across restart", func() {
+	ginkgo.It("Controller Manager should not create/delete replicas across restart", func(ctx context.Context) {
 
 		// Requires master ssh access.
 		e2eskipper.SkipUnlessProviderIs("gce", "aws")
@@ -301,7 +303,7 @@ var _ = SIGDescribe("DaemonRestart [Disruptive]", func() {
 		}
 	})
 
-	ginkgo.It("Scheduler should continue assigning pods to nodes across restart", func() {
+	ginkgo.It("Scheduler should continue assigning pods to nodes across restart", func(ctx context.Context) {
 
 		// Requires master ssh access.
 		e2eskipper.SkipUnlessProviderIs("gce", "aws")
@@ -319,7 +321,7 @@ var _ = SIGDescribe("DaemonRestart [Disruptive]", func() {
 		framework.ExpectNoError(e2erc.ScaleRC(f.ClientSet, f.ScalesGetter, ns, rcName, numPods+5, true))
 	})
 
-	ginkgo.It("Kubelet should not restart containers across restart", func() {
+	ginkgo.It("Kubelet should not restart containers across restart", func(ctx context.Context) {
 		nodeIPs, err := e2enode.GetPublicIps(f.ClientSet)
 		if err != nil {
 			framework.Logf("Unexpected error occurred: %v", err)
@@ -341,7 +343,7 @@ var _ = SIGDescribe("DaemonRestart [Disruptive]", func() {
 		}
 	})
 
-	ginkgo.It("Kube-proxy should recover after being killed accidentally", func() {
+	ginkgo.It("Kube-proxy should recover after being killed accidentally", func(ctx context.Context) {
 		nodeIPs, err := e2enode.GetPublicIps(f.ClientSet)
 		if err != nil {
 			framework.Logf("Unexpected error occurred: %v", err)
