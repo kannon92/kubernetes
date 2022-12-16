@@ -2915,6 +2915,7 @@ func TestSyncJobWithJobPodFailurePolicy(t *testing.T) {
 		},
 		"fail job based on OnPodConditions PodFailedToStart for Pending Case": {
 			enableJobPodFailurePolicy: true,
+			enablePodDisruptionConditions: true,
 			job: batch.Job{
 				TypeMeta:   metav1.TypeMeta{Kind: "Job"},
 				ObjectMeta: validObjectMeta,
@@ -2957,7 +2958,7 @@ func TestSyncJobWithJobPodFailurePolicy(t *testing.T) {
 					Type:    batch.JobFailed,
 					Status:  v1.ConditionTrue,
 					Reason:  "PodFailurePolicy",
-					Message: "Pod default/mypod-0 has condition PodFailedToStart matching FailJob rule at index 0",
+					Message: "Pod default/mypod-0 has condition for pending FailedToStart matching FailJob rule at index 0",
 				},
 			},
 			wantStatusActive:    0,
@@ -2966,6 +2967,7 @@ func TestSyncJobWithJobPodFailurePolicy(t *testing.T) {
 		},
 		"fail job based on OnPodConditions PodHasNetWork for Pending Case": {
 			enableJobPodFailurePolicy: true,
+			enablePodDisruptionConditions: true,
 			job: batch.Job{
 				TypeMeta:   metav1.TypeMeta{Kind: "Job"},
 				ObjectMeta: validObjectMeta,
@@ -3008,7 +3010,59 @@ func TestSyncJobWithJobPodFailurePolicy(t *testing.T) {
 					Type:    batch.JobFailed,
 					Status:  v1.ConditionTrue,
 					Reason:  "PodFailurePolicy",
-					Message: "Pod default/mypod-0 has condition PodHasNetwork matching FailJob rule at index 0",
+					Message: "Pod default/mypod-0 has condition for pending PodHasNetwork matching FailJob rule at index 0",
+				},
+			},
+			wantStatusActive:    0,
+			wantStatusFailed:    1,
+			wantStatusSucceeded: 0,
+		},
+		"fail job based on OnPodConditions PodScheduled for Pending Case": {
+			enableJobPodFailurePolicy: true,
+			enablePodDisruptionConditions: true,
+			job: batch.Job{
+				TypeMeta:   metav1.TypeMeta{Kind: "Job"},
+				ObjectMeta: validObjectMeta,
+				Spec: batch.JobSpec{
+					Selector:     validSelector,
+					Template:     validTemplate,
+					Parallelism:  pointer.Int32(1),
+					Completions:  pointer.Int32(1),
+					BackoffLimit: pointer.Int32(6),
+					PodFailurePolicy: &batch.PodFailurePolicy{
+						Rules: []batch.PodFailurePolicyRule{
+							{
+								Action: batch.PodFailurePolicyActionFailJob,
+								OnPodConditions: []batch.PodFailurePolicyOnPodConditionsPattern{
+									{
+										Type:   v1.PodScheduled,
+										Status: v1.ConditionFalse,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			pods: []v1.Pod{
+				{
+					Status: v1.PodStatus{
+						Phase: v1.PodPending,
+						Conditions: []v1.PodCondition{
+							{
+								Type:   v1.PodScheduled,
+								Status: v1.ConditionFalse,
+					},
+						},
+					},
+				},
+			},
+			wantConditions: &[]batch.JobCondition{
+				{
+					Type:    batch.JobFailed,
+					Status:  v1.ConditionTrue,
+					Reason:  "PodFailurePolicy",
+					Message: "Pod default/mypod-0 has condition for pending PodScheduled matching FailJob rule at index 0",
 				},
 			},
 			wantStatusActive:    0,

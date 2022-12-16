@@ -610,7 +610,7 @@ func TestMatchPodFailurePolicy(t *testing.T) {
 					},
 				},
 			},
-			wantJobFailureMessage: pointer.String("Pod default/mypod has condition FailedToStart matching FailJob rule at index 0"),
+			wantJobFailureMessage: pointer.String("Pod default/mypod has condition for pending FailedToStart matching FailJob rule at index 0"),
 			wantCountFailed:       true,
 			wantAction:            &failJob,
 		},
@@ -640,7 +640,37 @@ func TestMatchPodFailurePolicy(t *testing.T) {
 					},
 				},
 			},
-			wantJobFailureMessage: pointer.String("Pod default/mypod has condition PodHasNetwork matching FailJob rule at index 0"),
+			wantJobFailureMessage: pointer.String("Pod default/mypod has condition for pending PodHasNetwork matching FailJob rule at index 0"),
+			wantCountFailed:       true,
+			wantAction:            &failJob,
+		},
+		"job fail rule matched for pod conditions in pending due to Scheduled": {
+			podFailurePolicy: &batch.PodFailurePolicy{
+				Rules: []batch.PodFailurePolicyRule{
+					{
+						Action: batch.PodFailurePolicyActionFailJob,
+						OnPodConditions: []batch.PodFailurePolicyOnPodConditionsPattern{
+							{
+								Type:   v1.PodScheduled,
+								Status: v1.ConditionFalse,
+							},
+						},
+					},
+				},
+			},
+			failedPod: &v1.Pod{
+				ObjectMeta: validPodObjectMeta,
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+					Conditions: []v1.PodCondition{
+						{
+							Type:   v1.PodScheduled,
+							Status: v1.ConditionFalse,
+						},
+					},
+				},
+			},
+			wantJobFailureMessage: pointer.String("Pod default/mypod has condition for pending PodScheduled matching FailJob rule at index 0"),
 			wantCountFailed:       true,
 			wantAction:            &failJob,
 		},
