@@ -3917,7 +3917,7 @@ func TestPodFailedToCreateConditionWithReason(t *testing.T) {
 				Status: v1.PodStatus{
 					Phase: v1.PodPending,
 					ContainerStatuses: []v1.ContainerStatus{
-						waitingStateWithReason("containerA", "ErrInvalidImageName"),
+						waitingStateWithReason("containerA", "InvalidImageName"),
 					},
 				},
 			},
@@ -3935,7 +3935,7 @@ func TestPodFailedToCreateConditionWithReason(t *testing.T) {
 				ID: pod.UID,
 				ContainerStatuses: []*kubecontainer.Status{{
 					State:  kubecontainer.ContainerStateCreated,
-					Reason: "ErrInvalidImageName",
+					Reason: "InvalidImageName",
 				}}},
 		},
 		{
