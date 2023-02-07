@@ -264,7 +264,22 @@ func GeneratePodFailingToStart(pod *v1.Pod, containerStatus []v1.ContainerStatus
 		Type:   v1.PodFailingToStart,
 		Status: v1.ConditionFalse,
 	}
-	failedReasons := map[string]bool{"InvalidImageName": true, "CreateContainerConfigError": true, "ErrImageNeverPull": true}
+	failedReasons := map[string]bool{
+		// The section comes from kuberuntime_containers list of container errors in lifecycle.
+		"CreateContainerConfigError": true,
+		"PreCreateHookError":         true,
+		"CreateContainerError":       true,
+		"PreStartHookError":          true,
+		"PostStartHookError":         true,
+		// This section comes from kubelet/images and errors that can come from image_manager
+		"InvalidImageName":    true,
+		"ErrImageNeverPull":   true,
+		"ImagePullBackOff":    true,
+		"ImageInspectError":   true,
+		"ErrImagePull":        true,
+		"RegistryUnavailable": true,
+	}
+
 	for _, status := range containerStatus {
 		if status.State.Waiting == nil {
 			continue
@@ -274,6 +289,7 @@ func GeneratePodFailingToStart(pod *v1.Pod, containerStatus []v1.ContainerStatus
 			return v1.PodCondition{
 				Type:   v1.PodFailingToStart,
 				Status: v1.ConditionTrue,
+				Reason: status.State.Waiting.Reason,
 			}
 
 		}
