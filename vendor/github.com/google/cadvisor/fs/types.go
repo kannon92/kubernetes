@@ -31,7 +31,8 @@ type DockerContext struct {
 }
 
 type CrioContext struct {
-	Root string
+	Root       string
+	ImageStore string
 }
 
 type DeviceInfo struct {

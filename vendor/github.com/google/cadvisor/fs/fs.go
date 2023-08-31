@@ -44,6 +44,7 @@ const (
 	LabelSystemRoot          = "root"
 	LabelDockerImages        = "docker-images"
 	LabelCrioImages          = "crio-images"
+	LabelCrioWriteable       = "crio-containers"
 	DriverStatusPoolName     = "Pool Name"
 	DriverStatusDataLoopFile = "Data loop file"
 )
@@ -132,6 +133,10 @@ func NewFsInfo(context Context) (FsInfo, error) {
 
 	klog.V(1).Infof("Filesystem UUIDs: %+v", fsInfo.fsUUIDToDeviceName)
 	klog.V(1).Infof("Filesystem partitions: %+v", fsInfo.partitions)
+	labels := fsInfo.labels
+	for key, val := range labels {
+		klog.V(4).Infof("LabelsFsInfo", "Key", key, "Value", val)
+	}
 	fsInfo.addSystemRootLabel(mounts)
 	return fsInfo, nil
 }
@@ -296,8 +301,34 @@ func (i *RealFsInfo) addDockerImagesLabel(context Context, mounts []*mount.Info)
 }
 
 func (i *RealFsInfo) addCrioImagesLabel(context Context, mounts []*mount.Info) {
+	labelCrioImageOrContainers := LabelCrioWriteable
+	if context.Crio.ImageStore == "" {
+		labelCrioImageOrContainers = LabelCrioImages
+	}
 	if context.Crio.Root != "" {
 		crioPath := context.Crio.Root
+		crioImagePaths := map[string]struct{}{
+			"/": {},
+		}
+		for _, dir := range []string{"devicemapper", "btrfs", "aufs", "overlay", "zfs"} {
+			imageOrContainerPath := dir + "-containers"
+			if context.Crio.ImageStore == "" {
+				// If ImageStore is not specified then we will assume ImageFs is complete separate.
+				// No need to split the image store.
+				imageOrContainerPath = dir + "-images"
+
+			}
+			crioImagePaths[path.Join(crioPath, imageOrContainerPath)] = struct{}{}
+		}
+		for crioPath != "/" && crioPath != "." {
+			crioImagePaths[crioPath] = struct{}{}
+			crioPath = filepath.Dir(crioPath)
+		}
+		klog.V(4).InfoS("Adding CrioContainers to Path", "Key", labelCrioImageOrContainers)
+		i.updateContainerImagesPath(labelCrioImageOrContainers, mounts, crioImagePaths)
+	}
+	if context.Crio.ImageStore != "" {
+		crioPath := context.Crio.ImageStore
 		crioImagePaths := map[string]struct{}{
 			"/": {},
 		}
@@ -308,6 +339,7 @@ func (i *RealFsInfo) addCrioImagesLabel(context Context, mounts []*mount.Info) {
 			crioImagePaths[crioPath] = struct{}{}
 			crioPath = filepath.Dir(crioPath)
 		}
+		klog.V(4).InfoS("Adding CrioImages to Path", "Key", LabelCrioImages)
 		i.updateContainerImagesPath(LabelCrioImages, mounts, crioImagePaths)
 	}
 }

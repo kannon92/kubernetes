@@ -76,11 +76,12 @@ func (m *mockDiskInfoProvider) HasDedicatedImageFs(_ context.Context) (bool, err
 
 // mockDiskGC is used to simulate invoking image and container garbage collection.
 type mockDiskGC struct {
-	err                 error
-	imageGCInvoked      bool
-	containerGCInvoked  bool
-	fakeSummaryProvider *fakeSummaryProvider
-	summaryAfterGC      *statsapi.Summary
+	err                  error
+	imageGCInvoked       bool
+	containerGCInvoked   bool
+	readAndWriteSeparate bool
+	fakeSummaryProvider  *fakeSummaryProvider
+	summaryAfterGC       *statsapi.Summary
 }
 
 // DeleteUnusedImages returns the mocked values.
@@ -99,6 +100,10 @@ func (m *mockDiskGC) DeleteAllUnusedContainers(_ context.Context) error {
 		m.fakeSummaryProvider.result = m.summaryAfterGC
 	}
 	return m.err
+}
+
+func (m *mockDiskGC) IsWriteableLayerSeparateFromReadOnlyLayer(_ context.Context) bool {
+	return m.readAndWriteSeparate
 }
 
 func makePodWithMemoryStats(name string, priority int32, requests v1.ResourceList, limits v1.ResourceList, memoryWorkingSet string) (*v1.Pod, statsapi.PodStats) {

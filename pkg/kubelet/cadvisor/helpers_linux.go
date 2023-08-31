@@ -43,6 +43,17 @@ func (i *imageFsInfoProvider) ImageFsInfoLabel() (string, error) {
 	return "", fmt.Errorf("no imagefs label for configured runtime")
 }
 
+func (i *imageFsInfoProvider) ContainerFsInfoLabel() (string, error) {
+	// This is a temporary workaround to get stats for cri-o from cadvisor
+	// and should be removed.
+	// Related to https://github.com/kubernetes/kubernetes/issues/51798
+	if i.runtimeEndpoint == CrioSocket || i.runtimeEndpoint == "unix://"+CrioSocket {
+		return cadvisorfs.LabelCrioWriteable, nil
+	}
+	return "", fmt.Errorf("no containerfs label for configured runtime")
+
+}
+
 // NewImageFsInfoProvider returns a provider for the specified runtime configuration.
 func NewImageFsInfoProvider(runtimeEndpoint string) ImageFsInfoProvider {
 	return &imageFsInfoProvider{runtimeEndpoint: runtimeEndpoint}

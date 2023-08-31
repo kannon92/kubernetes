@@ -132,5 +132,5 @@ type ImageManagerService interface {
 	// RemoveImage removes the image.
 	RemoveImage(ctx context.Context, image *runtimeapi.ImageSpec) error
 	// ImageFsInfo returns information of the filesystem that is used to store images.
-	ImageFsInfo(ctx context.Context) ([]*runtimeapi.FilesystemUsage, error)
+	ImageFsInfo(ctx context.Context) (runtimeapi.ImageFsInfoResponse, error)
 }

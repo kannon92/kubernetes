@@ -379,20 +379,20 @@ func (p *criStatsProvider) getPodAndContainerMaps(ctx context.Context) (map[stri
 }
 
 // ImageFsStats returns the stats of the image filesystem.
-func (p *criStatsProvider) ImageFsStats(ctx context.Context) (*statsapi.FsStats, error) {
+func (p *criStatsProvider) ImageFsStats(ctx context.Context) (*statsapi.FsStats, *statsapi.FsStats, error) {
 	resp, err := p.imageService.ImageFsInfo(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// CRI may return the stats of multiple image filesystems but we only
 	// return the first one.
 	//
 	// TODO(yguo0905): Support returning stats of multiple image filesystems.
-	if len(resp) == 0 {
-		return nil, fmt.Errorf("imageFs information is unavailable")
+	if len(resp.GetImageFilesystems()) == 0 {
+		return nil, nil, fmt.Errorf("imageFs information is unavailable")
 	}
-	fs := resp[0]
+	fs := resp.GetImageFilesystems()[0]
 	s := &statsapi.FsStats{
 		Time:      metav1.NewTime(time.Unix(0, fs.Timestamp)),
 		UsedBytes: &fs.UsedBytes.Value,
@@ -411,7 +411,8 @@ func (p *criStatsProvider) ImageFsStats(ctx context.Context) (*statsapi.FsStats,
 		s.InodesFree = imageFsInfo.InodesFree
 		s.Inodes = imageFsInfo.Inodes
 	}
-	return s, nil
+	// TODO: For CRI Stats Provider we don't support separate disks yet.
+	return s, s, nil
 }
 
 // ImageFsDevice returns name of the device where the image filesystem locates,
@@ -421,7 +422,7 @@ func (p *criStatsProvider) ImageFsDevice(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	for _, fs := range resp {
+	for _, fs := range resp.ImageFilesystems {
 		fsInfo := p.getFsInfo(fs.GetFsId())
 		if fsInfo != nil {
 			return fsInfo.Device, nil

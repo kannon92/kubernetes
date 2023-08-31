@@ -430,6 +430,14 @@ func (f *FakeRuntime) ImageStats(_ context.Context) (*kubecontainer.ImageStats, 
 	return nil, f.Err
 }
 
+func (f *FakeRuntime) ImageFsInfo(_ context.Context) (*runtimeapi.ImageFsInfoResponse, error) {
+	f.Lock()
+	defer f.Unlock()
+
+	f.CalledFunctions = append(f.CalledFunctions, "ImageFsInfo")
+	return nil, f.Err
+}
+
 func (f *FakeStreamingRuntime) GetExec(_ context.Context, id kubecontainer.ContainerID, cmd []string, stdin, stdout, stderr, tty bool) (*url.URL, error) {
 	f.Lock()
 	defer f.Unlock()
