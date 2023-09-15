@@ -94,5 +94,8 @@ func (cgc *realContainerGC) IsWriteableLayerSeparateFromReadOnlyLayer(ctx contex
 	if err != nil {
 		return false
 	}
+	if resp.ContainerFilesystems == nil || resp.ImageFilesystems == nil {
+		return false
+	}
 	return resp.ContainerFilesystems[0].FsId.Mountpoint != resp.ImageFilesystems[0].FsId.Mountpoint
 }
