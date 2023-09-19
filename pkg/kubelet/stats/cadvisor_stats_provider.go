@@ -28,8 +28,10 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	statsapi "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 	kubetypes "k8s.io/kubelet/pkg/types"
+	"k8s.io/kubernetes/pkg/features"
 	"k8s.io/kubernetes/pkg/kubelet/cadvisor"
 	"k8s.io/kubernetes/pkg/kubelet/cm"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
@@ -241,6 +243,30 @@ func (p *cadvisorStatsProvider) ImageFsStats(ctx context.Context) (*statsapi.FsS
 	imageFsInfo, err := p.cadvisor.ImagesFsInfo()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get imageFs info: %v", err)
+	}
+
+	if !utilfeature.DefaultFeatureGate.Enabled(features.KubeletSeparateDiskGC) {
+		imageStats, err := p.imageService.ImageStats(ctx)
+		if err != nil || imageStats == nil {
+			return nil, nil, fmt.Errorf("failed to get image stats: %v", err)
+		}
+
+		var imageFsInodesUsed *uint64
+		if imageFsInfo.Inodes != nil && imageFsInfo.InodesFree != nil {
+			imageFsIU := *imageFsInfo.Inodes - *imageFsInfo.InodesFree
+			imageFsInodesUsed = &imageFsIU
+		}
+
+		imageFs := &statsapi.FsStats{
+			Time:           metav1.NewTime(imageFsInfo.Timestamp),
+			AvailableBytes: &imageFsInfo.Available,
+			CapacityBytes:  &imageFsInfo.Capacity,
+			UsedBytes:      &imageStats.TotalStorageBytes,
+			InodesFree:     imageFsInfo.InodesFree,
+			Inodes:         imageFsInfo.Inodes,
+			InodesUsed:     imageFsInodesUsed,
+		}
+		return imageFs, imageFs, nil
 	}
 	containerFsInfo, err := p.cadvisor.ContainerFsInfo()
 	if err != nil {
