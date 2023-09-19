@@ -445,11 +445,11 @@ func (f *FakeRuntime) ImageFsInfo(_ context.Context) (*runtimeapi.ImageFsInfoRes
 	defer f.Unlock()
 
 	f.CalledFunctions = append(f.CalledFunctions, "ImageFsInfo")
-	resp := *&runtimeapi.ImageFsInfoResponse{
+	resp := &runtimeapi.ImageFsInfoResponse{
 		ImageFilesystems:     f.ImageFsStats,
 		ContainerFilesystems: f.ContainerFsStats,
 	}
-	return &resp, f.Err
+	return resp, f.Err
 }
 
 func (f *FakeStreamingRuntime) GetExec(_ context.Context, id kubecontainer.ContainerID, cmd []string, stdin, stdout, stderr, tty bool) (*url.URL, error) {
