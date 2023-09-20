@@ -28,8 +28,11 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	utilfeature "k8s.io/apiserver/pkg/util/feature"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
 	statsapi "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
+	"k8s.io/kubernetes/pkg/features"
 	cadvisortest "k8s.io/kubernetes/pkg/kubelet/cadvisor/testing"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	containertest "k8s.io/kubernetes/pkg/kubelet/container/testing"
@@ -521,6 +524,38 @@ func TestCadvisorListPodCPUAndMemoryStats(t *testing.T) {
 	assert.Nil(t, ps.Network)
 }
 
+func TestCadvisorImagesFsStatsKubeletSeparateDiskOff(t *testing.T) {
+	ctx := context.Background()
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var (
+		assert       = assert.New(t)
+		mockCadvisor = cadvisortest.NewMockInterface(mockCtrl)
+		mockRuntime  = containertest.NewMockRuntime(mockCtrl)
+
+		seed        = 1000
+		imageFsInfo = getTestFsInfo(seed)
+		imageStats  = &kubecontainer.ImageStats{TotalStorageBytes: 100}
+	)
+
+	defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.KubeletSeparateDiskGC, false)()
+
+	mockCadvisor.EXPECT().ImagesFsInfo().Return(imageFsInfo, nil)
+	mockRuntime.EXPECT().ImageStats(ctx).Return(imageStats, nil)
+
+	provider := newCadvisorStatsProvider(mockCadvisor, &fakeResourceAnalyzer{}, mockRuntime, nil, NewFakeHostStatsProvider())
+	stats, _, err := provider.ImageFsStats(ctx)
+	assert.NoError(err)
+
+	assert.Equal(imageFsInfo.Timestamp, stats.Time.Time)
+	assert.Equal(imageFsInfo.Available, *stats.AvailableBytes)
+	assert.Equal(imageFsInfo.Capacity, *stats.CapacityBytes)
+	assert.Equal(imageStats.TotalStorageBytes, *stats.UsedBytes)
+	assert.Equal(imageFsInfo.InodesFree, stats.InodesFree)
+	assert.Equal(imageFsInfo.Inodes, stats.Inodes)
+	assert.Equal(*imageFsInfo.Inodes-*imageFsInfo.InodesFree, *stats.InodesUsed)
+}
+
 func TestCadvisorImagesFsStats(t *testing.T) {
 	ctx := context.Background()
 	mockCtrl := gomock.NewController(t)
@@ -543,6 +578,7 @@ func TestCadvisorImagesFsStats(t *testing.T) {
 		ImageFilesystems:     []*runtimeapi.FilesystemUsage{imageFsInfoCRI},
 		ContainerFilesystems: []*runtimeapi.FilesystemUsage{imageFsInfoCRI},
 	}
+	defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.KubeletSeparateDiskGC, true)()
 
 	mockCadvisor.EXPECT().ImagesFsInfo().Return(imageFsInfo, nil)
 	mockCadvisor.EXPECT().ContainerFsInfo().Return(imageFsInfo, nil)
@@ -602,6 +638,7 @@ func TestCadvisorSplitImagesFsStats(t *testing.T) {
 	mockCadvisor.EXPECT().ImagesFsInfo().Return(imageFsInfo, nil)
 	mockCadvisor.EXPECT().ContainerFsInfo().Return(containerFsInfo, nil)
 	mockRuntime.EXPECT().ImageFsInfo(ctx).Return(imageFsInfoResponse, nil)
+	defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.KubeletSeparateDiskGC, true)()
 
 	provider := newCadvisorStatsProvider(mockCadvisor, &fakeResourceAnalyzer{}, mockRuntime, nil, NewFakeHostStatsProvider())
 	stats, containerfs, err := provider.ImageFsStats(ctx)
