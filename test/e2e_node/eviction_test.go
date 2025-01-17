@@ -571,7 +571,7 @@ func runEvictionTest(f *framework.Framework, pressureTimeout time.Duration, expe
 				}
 				return fmt.Errorf("NodeCondition: %s encountered", expectedNodeCondition)
 			}, pressureDisappearTimeout, evictionPollInterval).Should(gomega.BeNil())
-			gomega.Expect(PrePullAllImages()).Should(gomega.Succeed())
+			gomega.Expect(PrePullAllImages(ctx)).Should(gomega.Succeed())
 			ginkgo.By("setting up pods to be used by tests")
 			pods := []*v1.Pod{}
 			for _, spec := range testSpecs {
@@ -644,7 +644,7 @@ func runEvictionTest(f *framework.Framework, pressureTimeout time.Duration, expe
 				if framework.TestContext.PrepullImages {
 					// The disk eviction test may cause the prepulled images to be evicted,
 					// prepull those images again to ensure this test not affect following tests.
-					PrePullAllImages()
+					PrePullAllImages(ctx)
 				}
 			}
 			// Run prePull using a defer to make sure it is executed even when the assertions below fails
