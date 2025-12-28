@@ -141,6 +141,8 @@ type WorkloadSpec struct {
 	// +required
 	// +listType=map
 	// +listMapKey=name
+	// +k8s:MaxItems=8
+	// +k8s:required
 	PodGroups []PodGroup
 }
 
@@ -157,11 +159,13 @@ type TypedLocalObjectReference struct {
 	// It must be a path segment name.
 	//
 	// +required
+	// +k8s:required
 	Kind string
 	// Name is the name of resource being referenced.
 	// It must be a path segment name.
 	//
 	// +required
+	// +k8s:required
 	Name string
 }
 
@@ -212,5 +216,6 @@ type GangSchedulingPolicy struct {
 	// It must be a positive integer.
 	//
 	// +required
+	// +k8s:minimum=0
 	MinCount int32
 }

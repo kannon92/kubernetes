@@ -126,6 +126,8 @@ type WorkloadSpec struct {
 	// +required
 	// +listType=map
 	// +listMapKey=name
+	// +k8s:required
+	// +k8s:maxItems=8
 	PodGroups []PodGroup `json:"podGroups" protobuf:"bytes,2,rep,name=podGroups"`
 }
 
@@ -142,11 +144,13 @@ type TypedLocalObjectReference struct {
 	// It must be a path segment name.
 	//
 	// +required
+	// +k8s:required
 	Kind string `json:"kind" protobuf:"bytes,2,opt,name=kind"`
 	// Name is the name of resource being referenced.
 	// It must be a path segment name.
 	//
 	// +required
+	// +k8s:required
 	Name string `json:"name" protobuf:"bytes,3,opt,name=name"`
 }
 
@@ -156,11 +160,13 @@ type PodGroup struct {
 	// It must be a DNS label. This field is immutable.
 	//
 	// +required
+	// +k8s:required
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Policy defines the scheduling policy for this PodGroup.
 	//
 	// +required
+	// +k8s:required
 	Policy PodGroupPolicy `json:"policy" protobuf:"bytes,3,opt,name=policy"`
 }
 
@@ -197,5 +203,7 @@ type GangSchedulingPolicy struct {
 	// It must be a positive integer.
 	//
 	// +required
+	// +k8s:required
+	// +k8s:minimum=0
 	MinCount int32 `json:"minCount" protobuf:"varint,1,opt,name=minCount"`
 }
