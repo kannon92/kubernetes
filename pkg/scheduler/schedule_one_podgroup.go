@@ -24,6 +24,9 @@ import (
 	"time"
 
 	v1 "k8s.io/api/core/v1"
+	schedulingv1alpha2 "k8s.io/api/scheduling/v1alpha2"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	corev1helpers "k8s.io/component-helpers/scheduling/corev1"
@@ -467,6 +470,61 @@ func (sched *Scheduler) submitPodGroupAlgorithmResult(ctx context.Context, sched
 	case podGroupWaitingOnPreemption:
 		logger.V(2).Info("Pod group is waiting for preemption", "podGroup", klog.KObj(podGroupInfo), "unschedulablePods", unschedulablePods)
 		metrics.PodGroupWaitingOnPreemption(schedFwk.ProfileName(), metrics.SinceInSeconds(start))
+	}
+
+	sched.updatePodGroupStatusCondition(ctx, podGroupInfo, result.status)
+}
+
+// updatePodGroupStatusCondition updates the PodGroup's PodGroupScheduled condition
+// based on the scheduling algorithm result.
+func (sched *Scheduler) updatePodGroupStatusCondition(ctx context.Context, podGroupInfo *framework.QueuedPodGroupInfo, status podGroupAlgorithmStatus) {
+	logger := klog.FromContext(ctx)
+
+	var condition metav1.Condition
+	switch status {
+	case podGroupFeasible:
+		condition = metav1.Condition{
+			Type:               schedulingv1alpha2.PodGroupScheduled,
+			Status:             metav1.ConditionTrue,
+			Reason:             "Scheduled",
+			Message:            "Pod group has been scheduled successfully",
+			LastTransitionTime: metav1.Now(),
+		}
+	case podGroupUnschedulable:
+		condition = metav1.Condition{
+			Type:               schedulingv1alpha2.PodGroupScheduled,
+			Status:             metav1.ConditionFalse,
+			Reason:             schedulingv1alpha2.PodGroupReasonUnschedulable,
+			Message:            "Pod group is unschedulable",
+			LastTransitionTime: metav1.Now(),
+		}
+	case podGroupWaitingOnPreemption:
+		condition = metav1.Condition{
+			Type:               schedulingv1alpha2.PodGroupScheduled,
+			Status:             metav1.ConditionFalse,
+			Reason:             schedulingv1alpha2.PodGroupReasonUnschedulable,
+			Message:            "Pod group is waiting for preemption",
+			LastTransitionTime: metav1.Now(),
+		}
+	default:
+		return
+	}
+
+	if sched.client == nil {
+		logger.V(4).Info("Skipping PodGroup status update, no client available")
+		return
+	}
+
+	podGroup, err := sched.client.SchedulingV1alpha2().PodGroups(podGroupInfo.Namespace).Get(ctx, podGroupInfo.Name, metav1.GetOptions{})
+	if err != nil {
+		logger.Error(err, "Failed to get PodGroup for status update", "podGroup", klog.KObj(podGroupInfo))
+		return
+	}
+
+	meta.SetStatusCondition(&podGroup.Status.Conditions, condition)
+
+	if _, err := sched.client.SchedulingV1alpha2().PodGroups(podGroupInfo.Namespace).UpdateStatus(ctx, podGroup, metav1.UpdateOptions{}); err != nil {
+		logger.Error(err, "Failed to update PodGroup status", "podGroup", klog.KObj(podGroupInfo))
 	}
 }
 
